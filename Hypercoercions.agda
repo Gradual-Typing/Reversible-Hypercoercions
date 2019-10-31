@@ -12,42 +12,59 @@ open import Relation.Nullary using (Dec; yes; no)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; cong; cong₂)
 
 data Tip : PreType → Type → Set where
-  ⁇ : ∀ {P} → (l : Label) → Tip P ⋆
-  ε : ∀ {P} → Tip P (` P)
+  ⁇ : ∀ {P} →
+    (l : Label) →
+    ---
+    Tip P ⋆
+  ε : ∀ {P} →
+    ---
+    Tip P (` P)
 
 mutual
   data Cast : Type → Type → Set where
-    id⋆ : Cast ⋆ ⋆
-    ↷ : ∀ {A P Q B}
-      → (t1 : Tip P A)
-      → (m  : Mid P Q)
-      → (t2 : Tip Q B)
-      → Cast A B
+    id⋆ :
+      ---
+      Cast ⋆ ⋆
+    ↷ : ∀ {A P Q B} →
+      (t1 : Tip P A) →
+      (m  : Mid P Q) →
+      (t2 : Tip Q B) →
+      ---
+      Cast A B
     
   data Mid : PreType → PreType → Set where
-    _⊥_ : ∀ {P Q}
-      → (l1 l2 : Label)
+    _⊥_ : ∀ {P Q} → 
+      (l1 l2 : Label) →
       ---
-      → Mid P Q
-
-    `_ : ∀ {P Q}
-      → (m : PreMid P Q)
-      → Mid P Q
+      Mid P Q
+    `_ : ∀ {P Q} →
+      (m : PreMid P Q) →
+      ---
+      Mid P Q
 
   data PreMid : PreType → PreType → Set where
-    U : PreMid U U
+    U :
+      ---
+      PreMid U U
     _⇒_ : ∀ {S1 S2 T1 T2} →
       (c₁ : Cast S2 S1) →
       (c₂ : Cast T1 T2) →
+      ---
       PreMid (S1 ⇒ T1) (S2 ⇒ T2)
     _⊗_ : ∀ {S1 S2 T1 T2} →
       (c₁ : Cast S1 S2) →
       (c₂ : Cast T1 T2) →
+      ---
       PreMid (S1 ⊗ T1) (S2 ⊗ T2)
     _⊕_ : ∀ {S1 S2 T1 T2} →
       (c₁ : Cast S1 S2) →
       (c₂ : Cast T1 T2) →
+      ---
       PreMid (S1 ⊕ T1) (S2 ⊕ T2)
+    ref : ∀ {S T} →
+      (c : Cast S T) →
+      ---
+      PreMid (ref S) (ref T)
     
 GapP : PreType → PreType → Set
 GapP P1 P2 = P1 ≡ P2 ⊎ (Label × Label)
@@ -90,6 +107,13 @@ GapT T1 T2 = T1 ≡ T2 ⊎ (Label × Label)
   → GapT T2 T4
 ℓ-inr (inj₁ refl) = inj₁ refl
 ℓ-inr (inj₂ l) = inj₂ l
+
+ℓ-ref : ∀ {S T} →
+  GapP (ref S) (ref T) →
+  ---
+  GapT S T
+ℓ-ref (inj₁ refl) = inj₁ refl
+ℓ-ref (inj₂ ll) = (inj₂ ll)
 
 mk-tipl : ∀ {T P}
   → Tip  P T
@@ -147,6 +171,7 @@ mutual
   seq-mm ⌣⇒ (c₁ ⇒ c₂) g (c₃ ⇒ c₄) = (seq c₃ (ℓ-dom g) c₁) ⇒ (seq c₂ (ℓ-cod g) c₄)
   seq-mm ⌣⊗ (c₁ ⊗ c₂) g (c₃ ⊗ c₄) = (seq c₁ (ℓ-car g) c₃) ⊗ (seq c₂ (ℓ-cdr g) c₄)
   seq-mm ⌣⊕ (c₁ ⊕ c₂) g (c₃ ⊕ c₄) = (seq c₁ (ℓ-inl g) c₃) ⊕ (seq c₂ (ℓ-inr g) c₄)
+  seq-mm ⌣! (ref c1) g (ref c2) = ref (seq c1 (ℓ-ref g) c2)
 
   link : ∀ {P S T Q}
     → Tip P S
@@ -154,68 +179,175 @@ mutual
     → Tip Q T
     -----------------
     → GapP P Q
-  link (⁇ l1) g (⁇ l2) = inj₂ (l2 , l1)
-  link (⁇ l) (inj₁ ()) ε
-  link (⁇ l) (inj₂ (l1 , l2)) ε = inj₂ (l1 , l)
-  link ε (inj₁ ()) (⁇ l)
-  link ε (inj₂ (l1 , l2)) (⁇ l) = inj₂ (l , l2)
+  link (⁇ l1) (inj₁ refl) (⁇ l2) = inj₂ (l2 , l1)
   link ε (inj₁ refl) ε = inj₁ refl
-  link ε (inj₂ y) ε = (inj₂ y)
+  link (⁇ l1) (inj₂ ll) (⁇ l2) = inj₂ (l2 , l1)
+  link (⁇ l) (inj₂ (l1 , l2)) ε = inj₂ (l1 , l)
+  link ε (inj₂ (l1 , l2)) (⁇ l) = inj₂ (l , l2)
+  link ε (inj₂ ll) ε = inj₂ ll
 
--- mutual
---   mk-id : ∀ T → Cast T T
---   mk-id ⋆
---     = id⋆
---   mk-id (` P)
---     = ↷ ε (mk-id-body P) ε
+mutual
+  mk-id : ∀ T → Cast T T
+  mk-id ⋆
+    = id⋆
+  mk-id (` P)
+    = ↷ ε (` mk-mid P) ε
 
---   mk-id-body : ∀ P → Mid P P
---   mk-id-body U
---     = U
---   mk-id-body (T₁ ⇒ T₂)
---     = mk-id T₁ ⇒ mk-id T₂
---   mk-id-body (T₁ ⊗ T₂)
---     = mk-id T₁ ⊗ mk-id T₂
---   mk-id-body (T₁ ⊕ T₂)
---     = mk-id T₁ ⊕ mk-id T₂
+  mk-mid : ∀ P → PreMid P P
+  mk-mid U
+    = U
+  mk-mid (T₁ ⇒ T₂)
+    = mk-id T₁ ⇒ mk-id T₂
+  mk-mid (T₁ ⊗ T₂)
+    = mk-id T₁ ⊗ mk-id T₂
+  mk-mid (T₁ ⊕ T₂)
+    = mk-id T₁ ⊕ mk-id T₂
+  mk-mid (ref T)
+    = ref (mk-id T)
 
--- mk-cast : Label → ∀ T1 T2 → Cast T1 T2
--- mk-cast l T1 T2 = seq (mk-id T1) (inj₂ l) (mk-id T2)
+mk-cast : Label → ∀ T1 T2 → Cast T1 T2
+mk-cast l T1 T2 = seq (mk-id T1) (inj₂ (l , l)) (mk-id T2)
 
--- mk-seq : ∀ {T1 T2 T3} → Cast T1 T2 → Cast T2 T3 → Cast T1 T3
--- mk-seq c1 c2 = seq c1 (inj₁ refl) c2
+mutual
+  mk-rev-mid : ∀ {S T} →
+    Mid S T →
+    ---
+    Mid T S
+  mk-rev-mid (l1 ⊥ l2) = l2 ⊥ l1
+  mk-rev-mid (` U) = ` U
+  mk-rev-mid (` (c₁ ⇒ c₂)) = ` (mk-rev c₁) ⇒ (mk-rev c₂)
+  mk-rev-mid (` (c₁ ⊗ c₂)) = ` (mk-rev c₁) ⊗ (mk-rev c₂)
+  mk-rev-mid (` (c₁ ⊕ c₂)) = ` (mk-rev c₁) ⊕ (mk-rev c₂)
+  mk-rev-mid (` ref c) = ` ref (mk-rev c)
 
--- mutual
---   seq-id-l : ∀ {T1 T2} → (c : Cast T1 T2) → mk-seq (mk-id T1) c ≡ c
---   seq-id-l id⋆ = refl
---   seq-id-l (↷ (⁇ l) r) = refl
---   seq-id-l (↷ ε (rest U t)) = refl
---   seq-id-l (↷ ε (rest (c₁ ⇒ c₂) t)) rewrite seq-id-r c₁ | seq-id-l c₂ = refl
---   seq-id-l (↷ ε (rest (c₁ ⊗ c₂) t)) rewrite seq-id-l c₁ | seq-id-l c₂ = refl
---   seq-id-l (↷ ε (rest (c₁ ⊕ c₂) t)) rewrite seq-id-l c₁ | seq-id-l c₂ = refl
+  mk-rev : ∀ {S T} →
+    Cast S T →
+    ---
+    Cast T S
+  mk-rev id⋆ = id⋆
+  mk-rev (↷ t1 m t2) = (↷ t2 (mk-rev-mid m) t1)
+
+mk-seq : ∀ {T1 T2 T3} → Cast T1 T2 → Cast T2 T3 → Cast T1 T3
+mk-seq c1 c2 = seq c1 (inj₁ refl) c2
+
+mutual
+  seq-id-l : ∀ {T1 T2} → (c : Cast T1 T2) → mk-seq (mk-id T1) c ≡ c
+  seq-id-l id⋆ = refl
+  seq-id-l (↷ (⁇ l) m t2) = refl
+  seq-id-l {T1 = ` P} (↷ ε (l1 ⊥ l2) t2) with P
+  seq-id-l {` P} (↷ ε (l1 ⊥ l2) t2) | U = refl
+  seq-id-l {` P} (↷ ε (l1 ⊥ l2) t2) | T₁ ⇒ T₂ = refl
+  seq-id-l {` P} (↷ ε (l1 ⊥ l2) t2) | T₁ ⊗ T₂ = refl
+  seq-id-l {` P} (↷ ε (l1 ⊥ l2) t2) | T₁ ⊕ T₂ = refl
+  seq-id-l {` P} (↷ ε (l1 ⊥ l2) t2) | ref T₁ = refl
+  seq-id-l (↷ ε (` U) t2) = refl
+  seq-id-l (↷ ε (` (c₁ ⇒ c₂)) t2) rewrite seq-id-r c₁ | seq-id-l c₂ = refl
+  seq-id-l (↷ ε (` (c₁ ⊗ c₂)) t2) rewrite seq-id-l c₁ | seq-id-l c₂ = refl
+  seq-id-l (↷ ε (` (c₁ ⊕ c₂)) t2) rewrite seq-id-l c₁ | seq-id-l c₂ = refl
+  seq-id-l (↷ ε (` ref c) t2) rewrite seq-id-l c = refl
   
---   seq-id-r : ∀ {T1 T2} → (c : Cast T1 T2) → mk-seq c (mk-id T2) ≡ c
---   seq-id-r id⋆ = refl
---   seq-id-r (↷ h (rest b (fail l))) = refl
---   seq-id-r (↷ h (rest b (last ‼))) = refl
---   seq-id-r (↷ h (rest U (last ε))) = refl
---   seq-id-r (↷ h (rest (c₁ ⇒ c₂) (last ε))) rewrite seq-id-l c₁ | seq-id-r c₂ = refl
---   seq-id-r (↷ h (rest (c₁ ⊗ c₂) (last ε))) rewrite seq-id-r c₁ | seq-id-r c₂ = refl
---   seq-id-r (↷ h (rest (c₁ ⊕ c₂) (last ε))) rewrite seq-id-r c₁ | seq-id-r c₂ = refl
+  seq-id-r : ∀ {T1 T2} → (c : Cast T1 T2) → mk-seq c (mk-id T2) ≡ c
+  seq-id-r id⋆ = refl
+  seq-id-r (↷ t1 m (⁇ l)) = refl
+  seq-id-r {T2 = ` P} (↷ t1 (l1 ⊥ l2) ε) with P
+  seq-id-r (↷ t1 (l1 ⊥ l2) ε) | U = refl
+  seq-id-r (↷ t1 (l1 ⊥ l2) ε) | T₁ ⇒ T₂ = refl
+  seq-id-r (↷ t1 (l1 ⊥ l2) ε) | T₁ ⊗ T₂ = refl
+  seq-id-r (↷ t1 (l1 ⊥ l2) ε) | T₁ ⊕ T₂ = refl
+  seq-id-r (↷ t1 (l1 ⊥ l2) ε) | ref T₁ = refl
+  seq-id-r (↷ t1 (` U) ε) = refl
+  seq-id-r (↷ t1 (` (c₁ ⇒ c₂)) ε) rewrite seq-id-l c₁ | seq-id-r c₂ = refl
+  seq-id-r (↷ t1 (` (c₁ ⊗ c₂)) ε) rewrite seq-id-r c₁ | seq-id-r c₂ = refl
+  seq-id-r (↷ t1 (` (c₁ ⊕ c₂)) ε) rewrite seq-id-r c₁ | seq-id-r c₂ = refl
+  seq-id-r (↷ t1 (` ref c) ε)  rewrite seq-id-r c = refl
 
--- seq-id⋆-l : ∀ {T}
---   → (ℓ : ⋆ ≡ ⋆ ⊎ Label)
---   → (c : Cast ⋆ T) → seq id⋆ ℓ c ≡ c
--- seq-id⋆-l (inj₁ refl) id⋆ = refl
--- seq-id⋆-l (inj₁ refl) (↷ (⁇ l) r) = refl
--- seq-id⋆-l (inj₂ y) id⋆ = refl
--- seq-id⋆-l (inj₂ y) (↷ (⁇ l) r) = refl
+lem-mk-rev-idem : ∀ {S T} →
+  (c : Cast S T) →
+  ---
+  mk-rev (mk-rev c) ≡ c
+lem-mk-rev-idem id⋆ = refl
+lem-mk-rev-idem (↷ t1 (l1 ⊥ l2) t2) = refl
+lem-mk-rev-idem (↷ t1 (` U) t2) = refl
+lem-mk-rev-idem (↷ t1 (` (c₁ ⇒ c₂)) t2)
+  rewrite lem-mk-rev-idem c₁ | lem-mk-rev-idem c₂
+  = refl
+lem-mk-rev-idem (↷ t1 (` (c₁ ⊗ c₂)) t2)
+  rewrite lem-mk-rev-idem c₁ | lem-mk-rev-idem c₂
+  = refl
+lem-mk-rev-idem (↷ t1 (` (c₁ ⊕ c₂)) t2)
+  rewrite lem-mk-rev-idem c₁ | lem-mk-rev-idem c₂
+  = refl
+lem-mk-rev-idem (↷ t1 (` ref c) t2)
+  rewrite lem-mk-rev-idem c
+  = refl
 
 
--- seq-id⋆-id⋆ : ∀ ℓ
---   → seq id⋆ ℓ id⋆ ≡ id⋆
--- seq-id⋆-id⋆ (inj₁ refl) = refl
--- seq-id⋆-id⋆ (inj₂ y) = refl
+
+open import Values Label Cast
+
+blame-gap : {P1 P2 : PreType}
+  → GapP P1 P2
+  → ¬ ((` P1) ⌣ (` P2))
+  ---
+  → Label
+blame-gap (inj₁ refl) ¬p = ⊥-elim (¬p (⌣refl _))
+blame-gap (inj₂ (l , _)) ¬p = l
+
+mutual
+  apply-cast : ∀ {T1 T2}
+    → Cast T1 T2
+    → Val T1
+    ---
+    → CastResult T2
+  apply-cast id⋆ v = succ v
+  apply-cast (↷ (⁇ l) m t2) (inj P v) = apply-rest (inj₂ (l , l)) m t2 v
+  apply-cast (↷ ε m t2) v = apply-rest (inj₁ refl) m t2 v
+
+  apply-rest : ∀ {P1 P2 P3 T}
+    → GapP P1 P2
+    → Mid P2 P3
+    → Tip P3 T
+    → Val (` P1)
+    ---
+    → CastResult T
+  apply-rest g m t v with apply-mid g m v
+  apply-rest g m t v | succ u = succ (apply-tail t u)
+  apply-rest g m t v | fail l = fail l
+
+  apply-tail : ∀ {P T} → Tip P T → Val (` P) → Val T
+  apply-tail (⁇ l) v = inj _ v
+  apply-tail ε v = v
+
+  apply-mid : ∀ {P1 P2 P3}
+    → GapP P1 P2
+    → Mid P2 P3
+    → Val (` P1)
+    ---
+    → CastResult (` P3)
+  apply-mid {P1} {P2} g m v with (` P1) ⌣? (` P2)
+  apply-mid g m v | yes p with m
+  apply-mid g m v | yes p | l1 ⊥ l2 = fail l1
+  apply-mid g m v | yes p | ` mm = succ (apply-premid g p mm v)
+  apply-mid {P1} {P2} g m v | no ¬p = fail (blame-gap g ¬p)
+
+  apply-premid : ∀ {P1 P2 P3}
+    → GapP P1 P2
+    → (` P1) ⌣ (` P2)
+    → PreMid P2 P3
+    → Val (` P1)
+    ---
+    → Val (` P3)
+  apply-premid g ⌣U U sole = sole
+  apply-premid g ⌣⇒ (d1 ⇒ d2) (fun env c1 e c2)
+    = fun env (seq d1 (ℓ-dom g) c1) e (seq c2 (ℓ-cod g) d2)
+  apply-premid g ⌣⊗ (d1 ⊗ d2) (cons v1 c1 v2 c2)
+    = cons v1 (seq c1 (ℓ-car g) d1) v2 (seq c2 (ℓ-cdr g) d2)
+  apply-premid g ⌣⊕ (d1 ⊕ d2) (inl v c)
+    = inl v (seq c (ℓ-inl g) d1) 
+  apply-premid g ⌣⊕ (d1 ⊕ d2) (inr v c)
+    = inr v (seq c (ℓ-inr g) d2) 
+  apply-premid g ⌣! (ref d) (box v c)
+    = box v (seq c (ℓ-ref g) d)
 
 -- mutual
 --   seq-m-assoc : ∀ {P1 P2 P3 P4 P5 P6}
@@ -355,7 +487,7 @@ mutual
 --   lem-id-body : ∀ P
 --     → (v : Val (` P))  
 --     -----------------------------
---     → apply-body (inj₁ refl) (mk-id-body P) v ≡ succ v
+--     → apply-body (inj₁ refl) (mk-mid P) v ≡ succ v
 --   lem-id-body U sole = refl
 --   lem-id-body (T₁ ⇒ T₂) (fun env c₁ b c₂) rewrite seq-id-l c₁ | seq-id-r c₂ = refl
 --   lem-id-body (T₁ ⊗ T₂) (cons v c₁ v₁ c₂) rewrite seq-id-r c₁ | seq-id-r c₂ = refl
@@ -493,7 +625,7 @@ mutual
 -- lem-cast-¬⌣ {` P} {` P₁} l ¬p v with (` P) ⌣? (` P₁)
 -- lem-cast-¬⌣ {` P} {` P₁} l ¬p v | yes p = ⊥-elim (¬p p)
 -- lem-cast-¬⌣ {` P} {` P₁} l ¬p v | no ¬p₁
---   rewrite sym (>>=-succ (apply-body (inj₁ refl) (mk-id-body P) v))
+--   rewrite sym (>>=-succ (apply-body (inj₁ refl) (mk-mid P) v))
 --         | lem-id (` P) v
 --   = refl
 
@@ -507,7 +639,7 @@ mutual
 --   → (v : Val (` P))  
 --   → apply-cast (mk-cast l (` P) ⋆) v ≡ succ (inj P v)
 -- lem-cast-inj {P} l v
---   rewrite sym (>>=-succ (apply-body (inj₁ refl) (mk-id-body P) v))
+--   rewrite sym (>>=-succ (apply-body (inj₁ refl) (mk-mid P) v))
 --         | lem-id (` P) v
 --   = refl
 

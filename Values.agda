@@ -18,7 +18,7 @@ mutual
       → {T1 T2 T3 T4 : Type}
       → (env : Env Γ)
       → (c₁ : Cast T3 T1)
-      → (b : (Γ , T1) ⊢ T2)
+      → (e : (Γ , T1) ⊢ T2)
       → (c₂ : Cast T2 T4)
       -------------
       → Val (` T3 ⇒ T4)
@@ -46,6 +46,12 @@ mutual
       → (c : Cast T T2)
       --------
       → Val (` T1 ⊕ T2)
+
+    box : ∀ {S T}
+      → Val S
+      → (c : Cast S T)
+      ---
+      → Val (` ref T)
 
   data Env : Context → Set where
     []  : Env ∅
