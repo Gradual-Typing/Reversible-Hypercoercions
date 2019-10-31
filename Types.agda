@@ -16,12 +16,10 @@ mutual
     _⇒_ : (T₁ T₂ : Type) → PreType
     _⊗_ : (T₁ T₂ : Type) → PreType
     _⊕_ : (T₁ T₂ : Type) → PreType
+    ref : (T₁ : Type) → PreType
 
 
 mutual
-  -- _≡?_ : (P1 P2 : PreType) → Dec (P1 ≡ P2)
-  -- P1 P≡? P2 = {!!}
-
   _≡?_ : (T1 T2 : Type) → Dec (T1 ≡ T2)
   ⋆ ≡? ⋆ = yes refl
   ⋆ ≡? (` P) = no (λ ())
@@ -51,6 +49,17 @@ mutual
   ((` (T₁ ⊕ T₂)) ≡? (` (T₃ ⊕ T₄))) | yes refl | yes refl = yes refl
   ((` (T₁ ⊕ T₂)) ≡? (` (T₃ ⊕ T₄))) | yes refl | no ¬p = no λ { refl → ¬p refl }
   ((` (T₁ ⊕ T₂)) ≡? (` (T₃ ⊕ T₄))) | no ¬p | p2 = no λ { refl → ¬p refl }
+  (` U) ≡? (` ref T₁) = no (λ ())
+  (` (T₁ ⇒ T₂)) ≡? (` ref T₃) = no (λ ())
+  (` (T₁ ⊗ T₂)) ≡? (` ref T₃) = no (λ ())
+  (` (T₁ ⊕ T₂)) ≡? (` ref T₃) = no (λ ())
+  (` ref T₁) ≡? (` U) = no (λ ())
+  (` ref T₁) ≡? (` (T₂ ⇒ T₃)) = no (λ ())
+  (` ref T₁) ≡? (` (T₂ ⊗ T₃)) = no (λ ())
+  (` ref T₁) ≡? (` (T₂ ⊕ T₃)) = no (λ ())
+  (` ref T₁) ≡? (` ref T₂) with T₁ ≡? T₂
+  ((` ref T₁) ≡? (` ref .T₁)) | yes refl = yes refl
+  ((` ref T₁) ≡? (` ref T₂)) | no ¬p = no λ { refl → ¬p refl }
   
 -- shallow consistency
 
@@ -62,6 +71,7 @@ data _⌣_ : (T1 T2 : Type) → Set where
   ⌣⇒ : ∀ {T1 T2 T3 T4} → (` T1 ⇒ T2) ⌣ (` T3 ⇒ T4)
   ⌣⊗ : ∀ {T1 T2 T3 T4} → (` T1 ⊗ T2) ⌣ (` T3 ⊗ T4)
   ⌣⊕ : ∀ {T1 T2 T3 T4} → (` T1 ⊕ T2) ⌣ (` T3 ⊕ T4)
+  ⌣! : ∀ {T1 T2} → (` ref T1) ⌣ (` ref T2)
 
 _⌣?_ : ∀ T1 T2 → Dec (T1 ⌣ T2)
 ⋆ ⌣? ⋆ = yes ⋆⌣⋆
@@ -83,6 +93,15 @@ _⌣?_ : ∀ T1 T2 → Dec (T1 ⌣ T2)
 (` (T₁ ⊕ T₂)) ⌣? (` (T₃ ⇒ T₄)) = no (λ ())
 (` (T₁ ⊕ T₂)) ⌣? (` (T₃ ⊗ T₄)) = no (λ ())
 (` (T₁ ⊕ T₂)) ⌣? (` (T₃ ⊕ T₄)) = yes ⌣⊕
+(` U) ⌣? (` ref T₁) = no (λ ())
+(` (T₂ ⇒ T₃)) ⌣? (` ref T₁) = no (λ ())
+(` (T₂ ⊗ T₃)) ⌣? (` ref T₁) = no (λ ())
+(` (T₂ ⊕ T₃)) ⌣? (` ref T₁) = no (λ ())
+(` ref T₁) ⌣? (` U) = no (λ ())
+(` ref T₃) ⌣? (` (T₁ ⇒ T₂)) = no (λ ())
+(` ref T₃) ⌣? (` (T₁ ⊗ T₂)) = no (λ ())
+(` ref T₃) ⌣? (` (T₁ ⊕ T₂)) = no (λ ())
+(` ref T₂) ⌣? (` ref T₁) = yes ⌣!
 
 ⌣refl : ∀ T → T ⌣ T
 ⌣refl ⋆ = ⋆⌣⋆
@@ -90,6 +109,7 @@ _⌣?_ : ∀ T1 T2 → Dec (T1 ⌣ T2)
 ⌣refl (` (T₁ ⇒ T₂)) = ⌣⇒
 ⌣refl (` (T₁ ⊗ T₂)) = ⌣⊗
 ⌣refl (` (T₁ ⊕ T₂)) = ⌣⊕
+⌣refl (` (ref T₁)) = ⌣!
 
 ⌣unique : ∀ {T1 T2}
   → (p1 p2 : T1 ⌣ T2)
@@ -102,6 +122,7 @@ _⌣?_ : ∀ T1 T2 → Dec (T1 ⌣ T2)
 ⌣unique ⌣⇒ ⌣⇒ = refl
 ⌣unique ⌣⊗ ⌣⊗ = refl
 ⌣unique ⌣⊕ ⌣⊕ = refl
+⌣unique ⌣! ⌣! = refl
 
 -- subtype
 
