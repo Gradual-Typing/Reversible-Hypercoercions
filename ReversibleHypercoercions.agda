@@ -1,4 +1,5 @@
 module ReversibleHypercoercions (Label : Set) where
+
 open import Types
 open import Variables
 open import Terms Label
