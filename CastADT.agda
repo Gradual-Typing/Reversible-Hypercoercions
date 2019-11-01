@@ -76,10 +76,10 @@ record LazyD (CR : CastADT) : Set where
     lem-cast-inj : ∀ {P}
       → (l : Label)
       → (v : Val Cast (` P))  
-      → apply-cast (mk-cast l (` P) ⋆) v ≡ succ (inj P v)
+      → apply-cast (mk-cast l (` P) ⋆) v ≡ succ (dyn v)
       
     lem-cast-proj : ∀ l P P₁ v
-      → apply-cast (mk-cast l ⋆ (` P)) (inj P₁ v) ≡ apply-cast (mk-cast l (` P₁) (` P)) v
+      → apply-cast (mk-cast l ⋆ (` P)) (dyn v) ≡ apply-cast (mk-cast l (` P₁) (` P)) v
 
     lem-cast-U : ∀ l
       → apply-cast (mk-cast l (` U) (` U)) sole ≡ succ sole

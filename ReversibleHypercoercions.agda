@@ -449,7 +449,7 @@ mutual
     ---
     → CastResult T2
   apply-cast id⋆ v = succ v
-  apply-cast (↷ (⁇ l) m t2) (inj P v) = apply-rest (inj₂ (l , l)) m t2 v
+  apply-cast (↷ (⁇ l) m t2) (dyn v) = apply-rest (inj₂ (l , l)) m t2 v
   apply-cast (↷ ε m t2) v = apply-rest (inj₁ refl) m t2 v
 
   apply-rest : ∀ {P1 P2 P3 T}
@@ -464,7 +464,7 @@ mutual
   apply-rest g m t v | fail l = fail l
 
   apply-tail : ∀ {P T} → Tip P T → Val (` P) → Val T
-  apply-tail (⁇ l) v = inj _ v
+  apply-tail (⁇ l) v = dyn v
   apply-tail ε v = v
 
   apply-mid : ∀ {P1 P2 P3}
