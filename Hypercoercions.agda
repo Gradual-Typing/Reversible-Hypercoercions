@@ -69,8 +69,22 @@ mutual
 GapP : PreType → PreType → Set
 GapP P1 P2 = P1 ≡ P2 ⊎ (Label × Label)
 
+rev-GapP : ∀ {P Q} →
+  GapP P Q →
+  ---
+  GapP Q P
+rev-GapP (inj₁ refl) = inj₁ refl
+rev-GapP (inj₂ (l1 , l2)) = inj₂ (l2 , l1)
+
 GapT : Type → Type → Set
 GapT T1 T2 = T1 ≡ T2 ⊎ (Label × Label)
+
+rev-GapT : ∀ {P Q} →
+  GapT P Q →
+  ---
+  GapT Q P
+rev-GapT (inj₁ refl) = inj₁ refl
+rev-GapT (inj₂ (l1 , l2)) = inj₂ (l2 , l1)
 
 ℓ-dom : ∀ {T1 T2 T3 T4}
   → GapP (T1 ⇒ T2) (T3 ⇒ T4)
@@ -131,7 +145,7 @@ mk-tipr : ∀ {T P}
   → Tip P ⋆
 mk-tipr (⁇ l) g = (⁇ l)
 mk-tipr ε (inj₁ ())
-mk-tipr ε (inj₂ (l1 , l2)) = ⁇ l1
+mk-tipr ε (inj₂ (l1 , l2)) = ⁇ l2
 
 mutual
   seq : ∀ {T1 T2 T3 T4}
@@ -154,8 +168,8 @@ mutual
   seq-m {P2 = P2} {P3 = P3} m1 g m2 with (` P2) ⌣? (` P3)
   seq-m (l1 ⊥ l2) g (l3 ⊥ l4) | yes p = l1 ⊥ l4
   seq-m (l1 ⊥ l2) g (` m) | yes p = l1 ⊥ l2
-  seq-m {P2 = _} {_} (` m) g (l1 ⊥ l2) | yes p = l1 ⊥ l2
-  seq-m {P2 = _} {_} (` m1) g (` m2) | yes p = ` seq-mm p m1 g m2
+  seq-m (` m) g (l1 ⊥ l2) | yes p = l1 ⊥ l2
+  seq-m (` m1) g (` m2) | yes p = ` seq-mm p m1 g m2
   seq-m m1 g m2 | no ¬p with g
   seq-m m1 g m2 | no ¬p | inj₁ refl = ⊥-elim (¬p (⌣refl _))
   seq-m m1 g m2 | no ¬p | inj₂ (l1 , l2) = l1 ⊥ l2
@@ -180,9 +194,9 @@ mutual
     -----------------
     → GapP P Q
   link (⁇ l1) (inj₁ refl) (⁇ l2) = inj₂ (l2 , l1)
-  link ε (inj₁ refl) ε = inj₁ refl
   link (⁇ l1) (inj₂ ll) (⁇ l2) = inj₂ (l2 , l1)
   link (⁇ l) (inj₂ (l1 , l2)) ε = inj₂ (l1 , l)
+  link ε (inj₁ refl) ε = inj₁ refl
   link ε (inj₂ (l1 , l2)) (⁇ l) = inj₂ (l , l2)
   link ε (inj₂ ll) ε = inj₂ ll
 
@@ -209,16 +223,22 @@ mk-cast : Label → ∀ T1 T2 → Cast T1 T2
 mk-cast l T1 T2 = seq (mk-id T1) (inj₂ (l , l)) (mk-id T2)
 
 mutual
+  mk-rev-premid : ∀ {S T} →
+    PreMid S T →
+    ---
+    PreMid T S
+  mk-rev-premid U = U
+  mk-rev-premid (c₁ ⇒ c₂) = (mk-rev c₁) ⇒ (mk-rev c₂)
+  mk-rev-premid (c₁ ⊗ c₂) = (mk-rev c₁) ⊗ (mk-rev c₂)
+  mk-rev-premid (c₁ ⊕ c₂) = (mk-rev c₁) ⊕ (mk-rev c₂)
+  mk-rev-premid (ref c) = ref (mk-rev c)
+    
   mk-rev-mid : ∀ {S T} →
     Mid S T →
     ---
     Mid T S
   mk-rev-mid (l1 ⊥ l2) = l2 ⊥ l1
-  mk-rev-mid (` U) = ` U
-  mk-rev-mid (` (c₁ ⇒ c₂)) = ` (mk-rev c₁) ⇒ (mk-rev c₂)
-  mk-rev-mid (` (c₁ ⊗ c₂)) = ` (mk-rev c₁) ⊗ (mk-rev c₂)
-  mk-rev-mid (` (c₁ ⊕ c₂)) = ` (mk-rev c₁) ⊕ (mk-rev c₂)
-  mk-rev-mid (` ref c) = ` ref (mk-rev c)
+  mk-rev-mid (` m) = ` mk-rev-premid m
 
   mk-rev : ∀ {S T} →
     Cast S T →
@@ -261,27 +281,148 @@ mutual
   seq-id-r (↷ t1 (` (c₁ ⊕ c₂)) ε) rewrite seq-id-r c₁ | seq-id-r c₂ = refl
   seq-id-r (↷ t1 (` ref c) ε)  rewrite seq-id-r c = refl
 
-lem-mk-rev-idem : ∀ {S T} →
+lem-rev-idem : ∀ {S T} →
   (c : Cast S T) →
   ---
   mk-rev (mk-rev c) ≡ c
-lem-mk-rev-idem id⋆ = refl
-lem-mk-rev-idem (↷ t1 (l1 ⊥ l2) t2) = refl
-lem-mk-rev-idem (↷ t1 (` U) t2) = refl
-lem-mk-rev-idem (↷ t1 (` (c₁ ⇒ c₂)) t2)
-  rewrite lem-mk-rev-idem c₁ | lem-mk-rev-idem c₂
+lem-rev-idem id⋆ = refl
+lem-rev-idem (↷ t1 (l1 ⊥ l2) t2) = refl
+lem-rev-idem (↷ t1 (` U) t2) = refl
+lem-rev-idem (↷ t1 (` (c₁ ⇒ c₂)) t2)
+  rewrite lem-rev-idem c₁ | lem-rev-idem c₂
   = refl
-lem-mk-rev-idem (↷ t1 (` (c₁ ⊗ c₂)) t2)
-  rewrite lem-mk-rev-idem c₁ | lem-mk-rev-idem c₂
+lem-rev-idem (↷ t1 (` (c₁ ⊗ c₂)) t2)
+  rewrite lem-rev-idem c₁ | lem-rev-idem c₂
   = refl
-lem-mk-rev-idem (↷ t1 (` (c₁ ⊕ c₂)) t2)
-  rewrite lem-mk-rev-idem c₁ | lem-mk-rev-idem c₂
+lem-rev-idem (↷ t1 (` (c₁ ⊕ c₂)) t2)
+  rewrite lem-rev-idem c₁ | lem-rev-idem c₂
   = refl
-lem-mk-rev-idem (↷ t1 (` ref c) t2)
-  rewrite lem-mk-rev-idem c
+lem-rev-idem (↷ t1 (` ref c) t2)
+  rewrite lem-rev-idem c
   = refl
 
+lem-tipr-rev : ∀ {T P} →
+  (t : Tip P T) →
+  (g : GapT ⋆ T) →
+  (mk-tipr t (rev-GapT g)) ≡ (mk-tipl t g)
+lem-tipr-rev (⁇ l) g = refl
+lem-tipr-rev ε (inj₁ ())
+lem-tipr-rev ε (inj₂ y) = refl
 
+lem-tipl-rev : ∀ {T P} →
+  (t : Tip P T) →
+  (g : GapT T ⋆) →
+  (mk-tipl t (rev-GapT g)) ≡ (mk-tipr t g)
+lem-tipl-rev (⁇ l) g = refl
+lem-tipl-rev ε (inj₁ ())
+lem-tipl-rev ε (inj₂ y) = refl
+
+lem-link-rev : ∀ {S T P Q} →
+  (t1 : Tip Q S)
+  (g  : GapT S T)
+  (t2 : Tip P T) →
+  ---
+  link t2 (rev-GapT g) t1 ≡ rev-GapP (link t1 g t2)
+lem-link-rev (⁇ l) (inj₁ refl) (⁇ l₁) = refl
+lem-link-rev (⁇ l) (inj₂ y) (⁇ l₁) = refl
+lem-link-rev (⁇ l) (inj₂ y) ε = refl
+lem-link-rev ε (inj₁ refl) ε = refl
+lem-link-rev ε (inj₂ y) (⁇ l) = refl
+lem-link-rev ε (inj₂ y) ε = refl
+
+ℓ-dom-rev : ∀ {T1 T2 T3 T4}
+  → (g : GapP (T1 ⇒ T2) (T3 ⇒ T4))
+  ---
+  → ℓ-dom (rev-GapP g) ≡ rev-GapT (ℓ-dom g)
+ℓ-dom-rev (inj₁ refl) = refl
+ℓ-dom-rev (inj₂ y) = refl
+
+ℓ-cod-rev : ∀ {T1 T2 T3 T4}
+  → (g : GapP (T1 ⇒ T2) (T3 ⇒ T4))
+  ---
+  → ℓ-cod (rev-GapP g) ≡ rev-GapT (ℓ-cod g)
+ℓ-cod-rev (inj₁ refl) = refl
+ℓ-cod-rev (inj₂ y) = refl
+
+ℓ-car-rev : ∀ {T1 T2 T3 T4}
+  → (g : GapP (T1 ⊗ T2) (T3 ⊗ T4))
+  ---
+  → ℓ-car (rev-GapP g) ≡ rev-GapT (ℓ-car g)
+ℓ-car-rev (inj₁ refl) = refl
+ℓ-car-rev (inj₂ y) = refl
+
+ℓ-cdr-rev : ∀ {T1 T2 T3 T4}
+  → (g : GapP (T1 ⊗ T2) (T3 ⊗ T4))
+  ---
+  → ℓ-cdr (rev-GapP g) ≡ rev-GapT (ℓ-cdr g)
+ℓ-cdr-rev (inj₁ refl) = refl
+ℓ-cdr-rev (inj₂ y) = refl
+
+ℓ-inl-rev : ∀ {T1 T2 T3 T4}
+  → (g : GapP (T1 ⊕ T2) (T3 ⊕ T4))
+  ---
+  → ℓ-inl (rev-GapP g) ≡ rev-GapT (ℓ-inl g)
+ℓ-inl-rev (inj₁ refl) = refl
+ℓ-inl-rev (inj₂ y) = refl
+
+ℓ-inr-rev : ∀ {T1 T2 T3 T4}
+  → (g : GapP (T1 ⊕ T2) (T3 ⊕ T4))
+  ---
+  → ℓ-inr (rev-GapP g) ≡ rev-GapT (ℓ-inr g)
+ℓ-inr-rev (inj₁ refl) = refl
+ℓ-inr-rev (inj₂ y) = refl
+
+ℓ-ref-rev : ∀ {T1 T3}
+  → (g : GapP (ref T1) (ref T3))
+  ---
+  → ℓ-ref (rev-GapP g) ≡ rev-GapT (ℓ-ref g)
+ℓ-ref-rev (inj₁ refl) = refl
+ℓ-ref-rev (inj₂ y) = refl
+
+lem-seq-rev : ∀ {T1 T2 T3 T4}
+  → (c1 : Cast T1 T2)
+  → (g  : GapT T2 T3)
+  → (c2 : Cast T3 T4)
+  ---
+  → mk-rev (seq (mk-rev c2) (rev-GapT g) (mk-rev c1)) ≡ seq c1 g c2
+lem-seq-rev id⋆ g id⋆ = refl
+lem-seq-rev id⋆ g (↷ t1 m t2)
+  rewrite lem-tipr-rev t1 g
+  = lem-rev-idem (↷ (mk-tipl t1 g) m t2)
+lem-seq-rev (↷ t1 m t2) g id⋆
+  rewrite lem-tipl-rev t2 g
+  = lem-rev-idem (↷ t1 m (mk-tipr t2 g))
+lem-seq-rev (↷ {Q = Q} t1 m1 t2) g (↷ {P = P} t3 m2 t4) with (` Q) ⌣? (` P) | (` P) ⌣? (` Q)
+lem-seq-rev (↷ {Q = Q} t1 (l1 ⊥ l2) t2) g (↷ {P = P} t3 (l3 ⊥ l4) t4) | yes p1 | yes p2 = refl
+lem-seq-rev (↷ {Q = Q} t1 (l1 ⊥ l2) t2) g (↷ {P = P} t3 (` m) t4) | yes p1 | yes p2 = refl
+lem-seq-rev (↷ {Q = Q} t1 (` m) t2) g (↷ {P = P} t3 (l1 ⊥ l2) t4) | yes p1 | yes p2 = refl
+lem-seq-rev (↷ {Q = .U} t1 (` U) t2) g (↷ {P = .U} t3 (` U) t4) | yes ⌣U | yes ⌣U = refl
+lem-seq-rev (↷ {Q = .(_ ⇒ _)} t1 (` (c₁ ⇒ c₂)) t2) g (↷ {P = .(_ ⇒ _)} t3 (` (c₃ ⇒ c₄)) t4) | yes ⌣⇒ | yes ⌣⇒
+  rewrite lem-link-rev t2 g t3
+  | ℓ-dom-rev (link t2 g t3) | lem-seq-rev c₃ (ℓ-dom (link t2 g t3)) c₁
+  | ℓ-cod-rev (link t2 g t3) | lem-seq-rev c₂ (ℓ-cod (link t2 g t3)) c₄
+  = refl
+lem-seq-rev (↷ {Q = .(_ ⊗ _)} t1 (` (c₁ ⊗ c₂)) t2) g (↷ {P = .(_ ⊗ _)} t3 (` (c₃ ⊗ c₄)) t4) | yes ⌣⊗ | yes ⌣⊗
+  rewrite lem-link-rev t2 g t3
+  | ℓ-car-rev (link t2 g t3) | lem-seq-rev c₁ (ℓ-car (link t2 g t3)) c₃
+  | ℓ-cdr-rev (link t2 g t3) | lem-seq-rev c₂ (ℓ-cdr (link t2 g t3)) c₄
+  = refl
+lem-seq-rev (↷ {Q = .(_ ⊕ _)} t1 (` (c₁ ⊕ c₂)) t2) g (↷ {P = .(_ ⊕ _)} t3 (` (c₃ ⊕ c₄)) t4) | yes ⌣⊕ | yes ⌣⊕
+  rewrite lem-link-rev t2 g t3
+  | ℓ-inl-rev (link t2 g t3) | lem-seq-rev c₁ (ℓ-inl (link t2 g t3)) c₃
+  | ℓ-inr-rev (link t2 g t3) | lem-seq-rev c₂ (ℓ-inr (link t2 g t3)) c₄
+  = refl
+lem-seq-rev (↷ {Q = .(ref _)} t1 (` ref c₁) t2) g (↷ {P = .(ref _)} t3 (` ref c₃) t4) | yes ⌣! | yes ⌣!
+  rewrite lem-link-rev t2 g t3
+  | ℓ-ref-rev (link t2 g t3) | lem-seq-rev c₁ (ℓ-ref (link t2 g t3)) c₃
+  = refl
+lem-seq-rev (↷ {Q = Q} t1 m1 t2) g (↷ {P = P} t3 m2 t4) | yes p1 | no ¬p2 = ⊥-elim (¬p2 (⌣symm p1))
+lem-seq-rev (↷ {Q = Q} t1 m1 t2) g (↷ {P = P} t3 m2 t4) | no ¬p1 | yes p2 = ⊥-elim (¬p1 (⌣symm p2))
+lem-seq-rev (↷ {Q = Q} t1 m1 t2) g (↷ {P = P} t3 m2 t4) | no ¬p1 | no ¬p2
+  rewrite lem-link-rev t2 g t3
+  with link t2 g t3
+... | inj₁ refl = (⊥-elim (¬p1 (⌣refl (` Q))))
+... | inj₂ y = refl
 
 open import Values Label Cast
 

@@ -111,6 +111,17 @@ _⌣?_ : ∀ T1 T2 → Dec (T1 ⌣ T2)
 ⌣refl (` (T₁ ⊕ T₂)) = ⌣⊕
 ⌣refl (` (ref T₁)) = ⌣!
 
+⌣symm : ∀ {S T} → S ⌣ T → T ⌣ S
+⌣symm ⋆⌣⋆ = ⋆⌣⋆
+⌣symm (⋆⌣P P) = P⌣⋆ P
+⌣symm (P⌣⋆ P) = ⋆⌣P P
+⌣symm ⌣U = ⌣U
+⌣symm ⌣⇒ = ⌣⇒
+⌣symm ⌣⊗ = ⌣⊗
+⌣symm ⌣⊕ = ⌣⊕
+⌣symm ⌣! = ⌣!
+
+
 ⌣unique : ∀ {T1 T2}
   → (p1 p2 : T1 ⌣ T2)
   ---
