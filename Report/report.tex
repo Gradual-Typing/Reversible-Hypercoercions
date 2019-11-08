@@ -1,0 +1,138 @@
+\documentclass[]{article}
+
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{amsmath}
+\usepackage{textcomp}
+\usepackage{stmaryrd}
+
+\newcommand{\stxrule}[3]{\text{#2} & #1 & ::= & #3\\}
+\newcommand{\stxrulecont}[1]{& & | & #1 \\}
+
+\newcommand{\TDyn}{\star}
+
+\newcommand{\PUnit}{\mathtt{Unit}}
+\newcommand{\PFunction}[2]{#1 \rightarrow #2}
+\newcommand{\PProduct}[2]{#1 \times #2}
+\newcommand{\PSum}[2]{#1 + #2}
+\newcommand{\PRef}[1]{\mathtt{Ref}\;#1}
+
+\newcommand{\tvar}[1]{#1}
+\newcommand{\tunit}[0]{\mathtt{unit}}
+\newcommand{\tlambda}[4]{\lambda^{\PFunction{#1}{#2}}#3.#4}
+\newcommand{\tapp}[2]{(#1 \; #2)}
+\newcommand{\tcons}[4]{\mathtt{cons}^{\PProduct{#1}{#2}} \; #3 \; #4}
+\newcommand{\tfst}[1]{\mathtt{fst} \; #1}
+\newcommand{\tsnd}[1]{\mathtt{snd} \; #1}
+\newcommand{\tinl}[3]{\mathtt{inl}^{\PSum{#1}{#2}} \; #3}
+\newcommand{\tinr}[3]{\mathtt{inr}^{\PSum{#1}{#2}} \; #3}
+\newcommand{\tcase}[3]{\mathtt{case} \; #1 \; #2 \; #3}
+\newcommand{\tcast}[4]{#1 \langle #2\Rightarrow^{#3}#4 \rangle}
+\newcommand{\tblame}[1]{\mathtt{blame} \; #1}
+\newcommand{\tread}[1]{\mathtt{!}\;#1}
+\newcommand{\twrite}[2]{#1\;\mathtt{:=}\;#2}
+
+\newcommand{\hcheck}[1]{\text{\textinterrobang}^{#1}}
+\newcommand{\hid}[0]{\epsilon}
+\newcommand{\mUnit}{\mathtt{Unit}}
+\newcommand{\mFunction}[2]{#1 \rightarrow #2}
+\newcommand{\mProduct}[2]{#1 \times #2}
+\newcommand{\mSum}[2]{#1 + #2}
+\newcommand{\mRef}[1]{\mathtt{Ref}\;#1}
+\newcommand{\mBot}[2]{{^{#1}}\bot^{#2}}
+
+\newcommand{\ciddyn}{\mathtt{id\star}}
+\newcommand{\chmt}[3]{#1 \overset{#2}{\curvearrowright} #3}
+
+%opening
+\title{Reversible Hypercoercions}
+\author{
+	Kuang-Chen \and	Andre
+}
+
+
+\begin{document}
+
+\maketitle
+
+%\begin{abstract}
+%
+%\end{abstract}
+
+\section{Syntax}
+
+\begin{figure}
+	\[
+	\begin{array}{lrcl}
+	\stxrule{S,T}{Types}{
+		\TDyn \mid P
+	}
+	\stxrule{Q,P}{Pretypes}{
+		\PUnit \mid
+		\PFunction{T}{T} \mid
+		\PProduct{T}{T} \mid
+		\PSum{T}{T} \mid
+		\PRef{T}
+	}
+%	\stxrule{s,t}{Terms}{
+%		\tvar{x} \mid{}
+%		\tunit{} \mid{}
+%		\tlambda{T}{T}{x}{t} \mid
+%		\tapp{t}{t} \mid
+%		\tread{t} \mid
+%		\twrite{t}{t}
+%	}
+%	\stxrulecont{
+%		\tcons{T}{T}{t}{t} \mid
+%		\tfst{t} \mid
+%		\tsnd{t} \mid
+%	}
+%	\stxrulecont{
+%		\tinl{T}{T}{t} \mid
+%		\tinl{T}{T}{t} \mid
+%		\tcase{t}{t}{t}
+%	}
+%	\stxrulecont{
+%		\tcast{t}{T}{l}{T} \mid
+%		\tblame{l}
+%	}
+\stxrule{c}{Reversible Hypercoercions}{
+	\ciddyn \mid
+	\chmt{h}{m}{t}
+}
+\stxrule{m}{Middles}{
+\mUnit \mid
+\mFunction{c}{c} \mid
+\mProduct{c}{c} \mid
+\mSum{c}{c} \mid
+\mRef{c} \mid
+\mBot{l}{l}
+}
+\stxrule{h,t}{Heads or tails}{
+\hid \mid \hcheck{l}
+}
+	\end{array}
+	\]
+	
+\caption{Reversible Hypercoercions}
+\end{figure}
+
+Reversible hypercoercions are not equivalent to hypercoercions as a consequence 
+of moving failure to the middles. Consider 
+\[
+\chmt{\hid}{\mFunction{c_1}{c_2}}{\hcheck{l}}
+\;\fatsemi\;
+\chmt{\hcheck{l'}}{\mBot{l_1}{l_2}}{\hid}
+=
+\chmt{\hid}{\mBot{\bullet}{l_2}}{\hid}
+\]
+What should go into the $\bullet$ depends on whether we want to blame the 
+projection $\hcheck{l'}$. The projection is guilty if the left pretype of teh 
+second middle is not shallowly consistent with functions, but we have not 
+information for making this decision. Here are some potential solutions:
+\begin{itemize}
+	\item include a type constructor in head
+	\item include two type constructors in bottoms.
+\end{itemize}
+
+\end{document}
